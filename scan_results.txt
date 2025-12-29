@@ -1,0 +1,11 @@
+[dotenv@17.2.3] injecting env (2) from .env -- tip: G‹÷n+≈  override existing env vars with { override: true }
+Found 9 meetings:
+- Title: Simple Test Speech, ID: 08f29eed-f06f-4b85-a1db-f48026bd58dc, Status: scheduled, AI Joined: false
+- Title: Test Summary Fix Meeting, ID: 23d147d9-37c6-4305-b126-742ada4759ea, Status: scheduled, AI Joined: false
+- Title: ai meeting , ID: bceca21f-784a-499a-9b54-ee206b540e1c, Status: scheduled, AI Joined: false
+- Title: nikki bday, ID: e0f2bdbd-1bb8-48e1-afca-2ebff78f9c2d, Status: scheduled, AI Joined: false
+- Title: Test Meeting 20-12-2025T18:30, ID: 44c3cefe-9a5a-49f8-8315-0e7b291fbd03, Status: scheduled, AI Joined: false
+- Title: Test Meeting 2025-12-20T18:30, ID: 64f1a513-f3c1-4489-aea1-a596e71ac0aa, Status: scheduled, AI Joined: false
+- Title: Test Meeting 2025-12-20T18:30, ID: 295fd0db-1893-431e-b499-4601d04bd57e, Status: scheduled, AI Joined: false
+- Title: Test Meeting 2025-12-20T18:30, ID: 9ecd3ca4-2dc9-4ebc-af30-e82b158f8cb6, Status: scheduled, AI Joined: false
+- Title: Test Meeting, ID: 681b4ab1-2a84-4703-a1cb-5b4ae6ce23fb, Status: scheduled, AI Joined: false
