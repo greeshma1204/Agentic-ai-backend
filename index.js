@@ -71,12 +71,102 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 }
 
 // Socket.IO Signaling
+
+// Waiting Room tracking
+const waitingRooms = new Map(); // roomId -> [{ socketId, userName }]
+const roomHosts = new Map();    // roomId -> hostSocketId (first user becomes host)
+
 io.on('connection', (socket) => {
   console.log('User Connected:', socket.id);
+
+  // Waiting Room: Participant requests to join
+  socket.on('join-request', ({ roomId, userName }) => {
+    console.log(`[Waiting Room] Join request from ${userName} (${socket.id}) for room ${roomId}`);
+
+    // Check if room has a host
+    const hostSocketId = roomHosts.get(roomId);
+
+    // If no host exists, this user becomes the host and is auto-approved
+    if (!hostSocketId) {
+      console.log(`[Waiting Room] No host yet. ${userName} becomes the host.`);
+      roomHosts.set(roomId, socket.id);
+      socket.emit('user-approved', { roomId, isHost: true });
+      return;
+    }
+
+    // Get or create waiting list for this room
+    if (!waitingRooms.has(roomId)) {
+      waitingRooms.set(roomId, []);
+    }
+
+    // Add user to waiting room
+    waitingRooms.get(roomId).push({ socketId: socket.id, userName });
+
+    // Join a notification channel for this room
+    socket.join(`waiting-${roomId}`);
+
+    // Notify host about new join request
+    io.to(hostSocketId).emit('new-join-request', {
+      socketId: socket.id,
+      userName,
+      waitingUsers: waitingRooms.get(roomId)
+    });
+
+    // Acknowledge the request
+    socket.emit('join-request-received', { message: 'Waiting for host approval...' });
+  });
+
+  // Host approves a user
+  socket.on('approve-user', ({ roomId, targetSocketId }) => {
+    console.log(`[Waiting Room] Host approved user ${targetSocketId} for room ${roomId}`);
+
+    // Remove user from waiting room
+    if (waitingRooms.has(roomId)) {
+      const waiting = waitingRooms.get(roomId).filter(u => u.socketId !== targetSocketId);
+      waitingRooms.set(roomId, waiting);
+    }
+
+    // Notify the approved user
+    io.to(targetSocketId).emit('user-approved', { roomId });
+
+    // Update host with new waiting list
+    socket.emit('waiting-list-update', { waitingUsers: waitingRooms.get(roomId) || [] });
+  });
+
+  // Host rejects a user
+  socket.on('reject-user', ({ roomId, targetSocketId }) => {
+    console.log(`[Waiting Room] Host rejected user ${targetSocketId} for room ${roomId}`);
+
+    // Remove user from waiting room
+    if (waitingRooms.has(roomId)) {
+      const waiting = waitingRooms.get(roomId).filter(u => u.socketId !== targetSocketId);
+      waitingRooms.set(roomId, waiting);
+    }
+
+    // Notify the rejected user
+    io.to(targetSocketId).emit('user-rejected', { roomId, message: 'Host denied entry' });
+
+    // Update host with new waiting list
+    socket.emit('waiting-list-update', { waitingUsers: waitingRooms.get(roomId) || [] });
+  });
 
   socket.on('join-room', (roomId, userId) => {
     socket.join(roomId);
     console.log(`User ${userId} (Socket: ${socket.id}) joined room ${roomId}`);
+
+    // First user to join becomes the host
+    if (!roomHosts.has(roomId)) {
+      roomHosts.set(roomId, socket.id);
+      socket.emit('you-are-host', { isHost: true });
+      console.log(`[Waiting Room] User ${socket.id} is now host of room ${roomId}`);
+
+      // Send any pending waiting users to the new host
+      if (waitingRooms.has(roomId) && waitingRooms.get(roomId).length > 0) {
+        socket.emit('waiting-list-update', { waitingUsers: waitingRooms.get(roomId) });
+      }
+    } else {
+      socket.emit('you-are-host', { isHost: false });
+    }
 
     // Get all other users in the room
     const clients = io.sockets.adapter.rooms.get(roomId);
