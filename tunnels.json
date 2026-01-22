@@ -1,0 +1,14 @@
+﻿{
+    "tunnels":  [
+                    {
+                        "name":  "command_line",
+                        "ID":  "d2b383695a45d084d0d93d835013237c",
+                        "uri":  "/api/tunnels/command_line",
+                        "public_url":  "https://ka-ichthyologic-talisha.ngrok-free.dev",
+                        "proto":  "https",
+                        "config":  "@{addr=http://localhost:5000; inspect=True}",
+                        "metrics":  "@{conns=; http=}"
+                    }
+                ],
+    "uri":  "/api/tunnels"
+}

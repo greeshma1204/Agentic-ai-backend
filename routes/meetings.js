@@ -516,6 +516,35 @@ router.get('/:meetingId/summary', async (req, res) => {
 });
 
 // ------------------------------------------
+// 6.1 Get Latest Meeting Summary (Global Chat Support)
+// GET /api/meetings/latest/summary
+// ------------------------------------------
+router.get('/latest/summary', async (req, res) => {
+    try {
+        // Find the most recent meeting that has a summary
+        const meeting = await Meeting.findOne({
+            summary: { $exists: true, $ne: "" },
+            status: 'summarized'
+        }).sort({ date: -1 });
+
+        if (!meeting) {
+            return res.status(404).json({ error: 'No meeting summaries found' });
+        }
+
+        res.json({
+            status: 'ready',
+            summary: meeting.summary,
+            meetingTitle: meeting.title,
+            meetingId: meeting.meetingId,
+            date: meeting.date
+        });
+    } catch (err) {
+        console.error("GET Latest Summary Error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ------------------------------------------
 // 7. Generate Summary (Manual Trigger - Real AI using Gemini)
 // POST /api/meetings/:meetingId/summary
 // ------------------------------------------

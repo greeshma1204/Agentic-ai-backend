@@ -7,6 +7,8 @@ const path = require('path');
 const meetingRoutes = require('./routes/meetings');
 const notificationRoutes = require('./routes/notifications');
 const userRoutes = require('./routes/users');
+const aiRoutes = require('./routes/ai');
+
 
 
 const http = require('http');
@@ -16,7 +18,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: "http://localhost:5175",
     methods: ["GET", "POST"]
   }
 });
@@ -38,7 +40,10 @@ mongoose.connect(process.env.MONGO_URI, {
 
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:5175",
+  credentials: true
+}));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -52,6 +57,8 @@ app.use((req, res, next) => {
 app.use('/api/meetings', meetingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/ai', aiRoutes);
+
 
 
 // Base route
@@ -179,8 +186,19 @@ io.on('connection', (socket) => {
     socket.emit('all-users', otherUsers);
 
     socket.on('disconnect', () => {
-      console.log(`User ${userId} disconnected`);
+      console.log(`User disconnected: ${socket.id}`);
+
+      // Notify others that user left
       socket.to(roomId).emit('user-disconnected', socket.id);
+
+      // If this user was the host, clear it so someone else (likely this user re-joining) can become host
+      if (roomHosts.get(roomId) === socket.id) {
+        console.log(`[Waiting Room] Host ${socket.id} disconnected from room ${roomId}`);
+        roomHosts.delete(roomId);
+
+        // Also notify the waiting room participants that the host is gone (optional but clean)
+        io.to(`waiting-${roomId}`).emit('host-disconnected');
+      }
     });
   });
 
